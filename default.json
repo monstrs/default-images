@@ -1,0 +1,45 @@
+{
+  "builders": [{
+    "type": "amazon-ebs",
+    "region": "us-east-1",
+    "source_ami": "ami-64e27e0c",
+    "instance_type": "t1.micro",
+    "ssh_username": "ubuntu",
+    "ssh_timeout": "5m",
+    "ami_name": "default-{{timestamp}}"
+  }],
+  "push": {
+    "name": "monstrs/default"
+  },
+  "provisioners": [
+    {
+      "scripts": [
+        "scripts/ruby.sh",
+        "scripts/chef.sh"
+      ],
+      "type": "shell"
+    },
+    {
+      "type": "chef-solo",
+      "cookbook_paths": ["./cookbooks/"],
+      "run_list": ["shell", "docker", "apt"],
+      "json": {
+        "shell": {
+          "users": {
+            "ubuntu": {}
+          }
+        }
+      }
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "atlas",
+      "artifact": "monstrs/default",
+      "artifact_type": "aws.ami",
+      "metadata": {
+        "created_at": "{{timestamp}}"
+      }
+    }
+  ]
+}

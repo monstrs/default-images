@@ -1,0 +1,51 @@
+{
+  "variables": {
+    "aws_vpc_id": "{{env `AWS_VPC_ID`}}",
+    "aws_subnet_id": "{{env `AWS_SUBNET_ID`}}"
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "region": "us-east-1",
+    "source_ami": "ami-d05e75b8",
+    "instance_type": "t2.medium",
+    "ssh_username": "ubuntu",
+    "ssh_timeout": "5m",
+    "ami_name": "default-vpc-{{timestamp}}",
+    "vpc_id": "{{user `aws_vpc_id`}}",
+    "subnet_id": "{{user `aws_subnet_id`}}"
+  }],
+  "push": {
+    "name": "monstrs/default-vpc"
+  },
+  "provisioners": [
+    {
+      "scripts": [
+        "scripts/ruby.sh",
+        "scripts/chef.sh"
+      ],
+      "type": "shell"
+    },
+    {
+      "type": "chef-solo",
+      "cookbook_paths": ["./cookbooks/"],
+      "run_list": ["shell", "docker", "apt"],
+      "json": {
+        "shell": {
+          "users": {
+            "ubuntu": {}
+          }
+        }
+      }
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "atlas",
+      "artifact": "monstrs/default-vpc",
+      "artifact_type": "aws.ami",
+      "metadata": {
+        "created_at": "{{timestamp}}"
+      }
+    }
+  ]
+}
